@@ -74,10 +74,12 @@ import static org.codehaus.groovy.ast.ClassHelper.STRING_TYPE;
 import static org.codehaus.groovy.ast.ClassHelper.int_TYPE;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.args;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.assignS;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.attrX;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.callX;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.classX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.constX;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.ctorThisS;
-import static org.codehaus.groovy.ast.tools.GeneralUtils.propX;
+import static org.codehaus.groovy.ast.tools.GeneralUtils.returnS;
 import static org.codehaus.groovy.ast.tools.GeneralUtils.varX;
 import static org.codehaus.groovy.ast.tools.GenericsUtils.addMethodGenerics;
 import static org.codehaus.groovy.ast.tools.GenericsUtils.applyGenericsContextToPlaceHolders;
@@ -270,18 +272,17 @@ public class StaticCompilationVisitor extends StaticTypeCheckingVisitor {
                 acc += 1;
                 Parameter param = new Parameter(node.getPlainNodeReference(), "$that");
                 Expression receiver = fieldNode.isStatic() ? classX(node) : varX(param);
-                Statement body = new ExpressionStatement(propX(receiver, fieldNode.getName()));
+                Statement body = returnS(attrX(receiver, constX(fieldNode.getName())));
                 MethodNode accessor = node.addMethod("pfaccess$" + acc, modifiers, fieldNode.getOriginType(), new Parameter[]{param}, ClassNode.EMPTY_ARRAY, body);
                 privateFieldAccessors.put(fieldNode.getName(), accessor);
             }
-
             if (generateMutator) {
                 // increment acc if it hasn't been incremented in the current iteration
                 if (!generateAccessor) acc += 1;
                 Parameter param = new Parameter(node.getPlainNodeReference(), "$that");
                 Expression receiver = fieldNode.isStatic() ? classX(node) : varX(param);
                 Parameter value = new Parameter(fieldNode.getOriginType(), "$value");
-                Statement body = assignS(propX(receiver, fieldNode.getName()), varX(value));
+                Statement body = assignS(attrX(receiver, constX(fieldNode.getName())), varX(value));
                 MethodNode mutator = node.addMethod("pfaccess$0" + acc, modifiers, fieldNode.getOriginType(), new Parameter[]{param, value}, ClassNode.EMPTY_ARRAY, body);
                 privateFieldMutators.put(fieldNode.getName(), mutator);
             }
