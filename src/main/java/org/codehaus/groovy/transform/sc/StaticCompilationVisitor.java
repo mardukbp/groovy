@@ -23,7 +23,6 @@ import groovy.transform.CompileStatic;
 import groovy.transform.TypeChecked;
 import org.codehaus.groovy.ast.ASTNode;
 import org.codehaus.groovy.ast.AnnotatedNode;
-import org.codehaus.groovy.ast.AnnotationNode;
 import org.codehaus.groovy.ast.ClassCodeVisitorSupport;
 import org.codehaus.groovy.ast.ClassHelper;
 import org.codehaus.groovy.ast.ClassNode;
@@ -274,6 +273,7 @@ public class StaticCompilationVisitor extends StaticTypeCheckingVisitor {
                 Expression receiver = fieldNode.isStatic() ? classX(node) : varX(param);
                 Statement body = returnS(attrX(receiver, constX(fieldNode.getName())));
                 MethodNode accessor = node.addMethod("pfaccess$" + acc, modifiers, fieldNode.getOriginType(), new Parameter[]{param}, ClassNode.EMPTY_ARRAY, body);
+                accessor.setNodeMetaData(STATIC_COMPILE_NODE, Boolean.TRUE);
                 privateFieldAccessors.put(fieldNode.getName(), accessor);
             }
             if (generateMutator) {
@@ -284,6 +284,7 @@ public class StaticCompilationVisitor extends StaticTypeCheckingVisitor {
                 Parameter value = new Parameter(fieldNode.getOriginType(), "$value");
                 Statement body = assignS(attrX(receiver, constX(fieldNode.getName())), varX(value));
                 MethodNode mutator = node.addMethod("pfaccess$0" + acc, modifiers, fieldNode.getOriginType(), new Parameter[]{param, value}, ClassNode.EMPTY_ARRAY, body);
+                mutator.setNodeMetaData(STATIC_COMPILE_NODE, Boolean.TRUE);
                 privateFieldMutators.put(fieldNode.getName(), mutator);
             }
         }
@@ -376,8 +377,8 @@ public class StaticCompilationVisitor extends StaticTypeCheckingVisitor {
                 if (origGenericsTypes != null) {
                     bridge.setGenericsTypes(applyGenericsContextToPlaceHolders(genericsSpec, origGenericsTypes));
                 }
+                bridge.setNodeMetaData(STATIC_COMPILE_NODE, Boolean.TRUE);
                 privateBridgeMethods.put(method, bridge);
-                bridge.addAnnotation(new AnnotationNode(COMPILESTATIC_CLASSNODE));
             }
         }
         if (!privateBridgeMethods.isEmpty()) {
