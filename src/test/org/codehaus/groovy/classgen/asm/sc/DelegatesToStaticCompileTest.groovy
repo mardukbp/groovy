@@ -92,7 +92,7 @@ class DelegatesToStaticCompileTest extends DelegatesToSTCTest implements StaticC
                 }
 
                 class Handler {
-                    def doWithEntity(@DelegatesTo(Entity) Closure c) {
+                    def doWithEntity(@DelegatesTo(value=Entity, strategy=Closure.DELEGATE_FIRST) Closure c) {
                         new Entity().with(c)
                     }
 
@@ -110,5 +110,30 @@ class DelegatesToStaticCompileTest extends DelegatesToSTCTest implements StaticC
             assert !bytecode.contains('CHECKCAST Calculation')
             assert !bytecode.contains('INVOKESTATIC org/codehaus/groovy/runtime/ScriptBytecodeAdapter.castToType')
         }
+    }
+
+    // GROOVY-7996
+    void testErrorForMismatchedClosureResolveStrategy() {
+        shouldFailWithMessages '''
+            class Foo {
+                def build(Closure x) { // resolve strategy OWNER_FIRST
+                    this.with(x) // resolve strategy DELEGATE_FIRST
+                }
+                def propertyMissing(String name) {
+                    'something'
+                }
+            }
+
+            class Bar {
+                protected List bars = []
+                def baz() {
+                    new Foo().build {
+                        bars.isEmpty() // fails if executed; delegate's propertyMissing takes precedence
+                    }
+                }
+            }
+
+            new Bar().baz()
+        ''', 'Closure parameter with resolve strategy 0 passed to method with resolve strategy 1'
     }
 }
